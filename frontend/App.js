@@ -43,16 +43,34 @@ export default {
           <table class="stats-table">
             <thead>
               <tr>
-                <th>Repository</th>
-                <th class="text-right">Commits</th>
-                <th class="text-right">Lines Changed</th>
-                <th class="text-right">Additions</th>
-                <th class="text-right">Deletions</th>
-                <th class="text-right">Avg Lines/Commit</th>
+                <th @click="sortTable('name')" class="sortable">
+                  Repository
+                  <span class="sort-indicator" v-if="sortBy === 'name'">{{ sortDirection === 'asc' ? '▲' : '▼' }}</span>
+                </th>
+                <th @click="sortTable('commitCount')" class="text-right sortable">
+                  Commits
+                  <span class="sort-indicator" v-if="sortBy === 'commitCount'">{{ sortDirection === 'asc' ? '▲' : '▼' }}</span>
+                </th>
+                <th @click="sortTable('totalLinesChanged')" class="text-right sortable">
+                  Lines Changed
+                  <span class="sort-indicator" v-if="sortBy === 'totalLinesChanged'">{{ sortDirection === 'asc' ? '▲' : '▼' }}</span>
+                </th>
+                <th @click="sortTable('totalAdditions')" class="text-right sortable">
+                  Additions
+                  <span class="sort-indicator" v-if="sortBy === 'totalAdditions'">{{ sortDirection === 'asc' ? '▲' : '▼' }}</span>
+                </th>
+                <th @click="sortTable('totalDeletions')" class="text-right sortable">
+                  Deletions
+                  <span class="sort-indicator" v-if="sortBy === 'totalDeletions'">{{ sortDirection === 'asc' ? '▲' : '▼' }}</span>
+                </th>
+                <th @click="sortTable('avgLinesPerCommit')" class="text-right sortable">
+                  Avg Lines/Commit
+                  <span class="sort-indicator" v-if="sortBy === 'avgLinesPerCommit'">{{ sortDirection === 'asc' ? '▲' : '▼' }}</span>
+                </th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="repo in stats.repositories" :key="repo.name" class="repo-row">
+              <tr v-for="repo in sortedRepositories" :key="repo.name" class="repo-row">
                 <td class="repo-name">
                   <a :href="repo.url" target="_blank" rel="noopener noreferrer">
                     {{ repo.name }}
@@ -106,11 +124,37 @@ export default {
       },
       loading: true,
       refreshInterval: 30000, // 30 seconds
-      refreshTimer: null
+      refreshTimer: null,
+      sortBy: 'name',
+      sortDirection: 'asc'
     };
   },
 
   computed: {
+    sortedRepositories() {
+      if (!this.stats.repositories) return [];
+      const repos = [...this.stats.repositories];
+      
+      repos.sort((a, b) => {
+        let aValue = a[this.sortBy];
+        let bValue = b[this.sortBy];
+        
+        // Handle string comparison (repository name)
+        if (typeof aValue === 'string') {
+          const comparison = aValue.localeCompare(bValue, undefined, { sensitivity: 'base' });
+          return this.sortDirection === 'asc' ? comparison : -comparison;
+        }
+        
+        // Handle numeric comparison
+        if (this.sortDirection === 'asc') {
+          return aValue - bValue;
+        } else {
+          return bValue - aValue;
+        }
+      });
+      
+      return repos;
+    },
     totalCommits() {
       return this.stats.repositories?.reduce((sum, repo) => sum + repo.commitCount, 0) || 0;
     },
@@ -158,6 +202,17 @@ export default {
     stopAutoRefresh() {
       if (this.refreshTimer) {
         clearInterval(this.refreshTimer);
+      }
+    },
+
+    sortTable(column) {
+      if (this.sortBy === column) {
+        // Toggle direction if same column
+        this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        // New column, default to ascending
+        this.sortBy = column;
+        this.sortDirection = 'asc';
       }
     }
   },
