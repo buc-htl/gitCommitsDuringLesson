@@ -229,7 +229,20 @@ async function selectOrganization() {
   console.log('\n📋 Available organizations:');
   config.organizations.forEach((org, index) => {
     const tw = org.timeWindows[0];
-    console.log(`  ${index + 1}. ${org.name} (${tw.day} ${tw.startTime}-${tw.endTime})`);
+    // Build display text supporting both day names and specific dates
+    let timeWindowDisplay;
+    if (tw.startDate && tw.endDate) {
+      timeWindowDisplay = tw.startDate === tw.endDate 
+        ? `${tw.startDate} ${tw.startTime}-${tw.endTime}`
+        : `${tw.startDate} ${tw.startTime}-${tw.endDate} ${tw.endTime}`;
+    } else if (tw.startDay && tw.endDay) {
+      timeWindowDisplay = tw.startDay === tw.endDay 
+        ? `${tw.startDay} ${tw.startTime}-${tw.endTime}`
+        : `${tw.startDay} ${tw.startTime}-${tw.endDay} ${tw.endTime}`;
+    } else {
+      timeWindowDisplay = 'N/A';
+    }
+    console.log(`  ${index + 1}. ${org.name} (${timeWindowDisplay})`);
   });
 
   const rl = readline.createInterface({

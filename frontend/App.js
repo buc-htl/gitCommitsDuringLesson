@@ -191,11 +191,9 @@ export default {
         const untilDate = new Date(tw.until);
         
         const formatDate = (date) => {
-          const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-          const dayName = days[date.getDay()];
-          const hours = String(date.getHours()).padStart(2, '0');
-          const minutes = String(date.getMinutes()).padStart(2, '0');
-          return `${dayName} ${hours}:${minutes}`;
+          const dateStr = date.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit' });
+          const timeStr = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+          return `${dateStr} ${timeStr}`;
         };
         
         return `${formatDate(sinceDate)} - ${formatDate(untilDate)}`;

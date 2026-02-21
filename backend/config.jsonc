@@ -8,10 +8,10 @@
       "ignoreCommitters": ["Reinhold Buchinger"],
       "timeWindows": [
         {
-          // Time windows can use either day names (monday, tuesday, etc.) or specific dates (YYYY-MM-DD)
-          "startDay": "monday", // e.g. "monday" or "2026-02-21"
+          // Time windows can use either day names (Monday, Tuesday, etc.) or specific dates (YYYY-MM-DD)
+          "startDay": "2026-02-22", // e.g. "Monday" or "2026-02-21"
           "startTime": "09:55",
-          "endDay": "friday",
+          "endDay": "2026-02-22", 
           "endTime": "11:35"
         }
       ]
@@ -21,9 +21,9 @@
       "ignoreCommitters": ["Reinhold Buchinger"],
       "timeWindows": [
         {
-          "startDay": "monday",
+          "startDay": "Monday",
           "startTime": "11:35",
-          "endDay": "monday",
+          "endDay": "Monday",
           "endTime": "13:25"
         }
       ]

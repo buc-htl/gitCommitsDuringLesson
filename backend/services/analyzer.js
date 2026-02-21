@@ -2,9 +2,9 @@ export class CommitAnalyzer {
   /**
    * Calculate time window boundaries supporting both day names and specific dates
    * Can accept either (startDay/endDay) or (startDate/endDate) parameters
-   * @param {string} startDayOrDate - Start day name (e.g. 'monday') or date (e.g. '2026-02-21')
+   * @param {string} startDayOrDate - Start day name (e.g. 'Monday', case-insensitive) or date (e.g. '2026-02-21')
    * @param {string} startTime - Start time in local time (e.g. '10:00')
-   * @param {string} endDayOrDate - End day name (e.g. 'friday') or date (e.g. '2026-02-25')
+   * @param {string} endDayOrDate - End day name (e.g. 'Friday', case-insensitive) or date (e.g. '2026-02-25')
    * @param {string} endTime - End time in local time (e.g. '17:00')
    * @returns {Object} Object with since and until Date objects (in UTC for GitHub API)
    */
@@ -43,6 +43,7 @@ export class CommitAnalyzer {
 
   /**
    * Get time window from day names (recurring weekly)
+   * Day names are case-insensitive (e.g. 'Monday', 'monday', 'MONDAY' all work)
    * @private
    */
   _getTimeWindowFromDayNames(startDay, startTime, endDay, endTime) {
