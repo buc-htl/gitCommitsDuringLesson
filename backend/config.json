@@ -6,8 +6,17 @@
       "timeWindows": [
         {
           "day": "monday",
-          "startTime": "10:00",
-          "endTime": "12:00"
+          "startTime": "09:55",
+          "endTime": "11:35"
+        }
+      ]
+    }, {
+      "name": "25-26-2BI-SEW",
+      "timeWindows": [
+        {
+          "day": "monday",
+          "startTime": "11:35",
+          "endTime": "13:25"
         }
       ]
     }

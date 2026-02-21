@@ -4,6 +4,7 @@ import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import dotenv from 'dotenv';
+import readline from 'readline/promises';
 import { GitHubService } from './services/github.js';
 import { CommitAnalyzer } from './services/analyzer.js';
 
@@ -151,14 +152,48 @@ async function analyzeOrganization(organization) {
   }
 }
 
-// Schedule periodic analysis
-function scheduleAnalysis() {
+// Prompt user to select an organization
+async function selectOrganization() {
   if (config.organizations.length === 0) {
     console.error('❌ No organizations configured in config.json');
-    return;
+    process.exit(1);
   }
 
-  const org = config.organizations[0];
+  if (config.organizations.length === 1) {
+    return config.organizations[0];
+  }
+
+  console.log('\n📋 Available organizations:');
+  config.organizations.forEach((org, index) => {
+    const tw = org.timeWindows[0];
+    console.log(`  ${index + 1}. ${org.name} (${tw.day} ${tw.startTime}-${tw.endTime})`);
+  });
+
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  let selectedOrg = null;
+  while (!selectedOrg) {
+    const answer = await rl.question('\n🔢 Select organization number: ');
+    const num = parseInt(answer.trim());
+    
+    if (num >= 1 && num <= config.organizations.length) {
+      selectedOrg = config.organizations[num - 1];
+      console.log(`✅ Selected: ${selectedOrg.name}\n`);
+    } else {
+      console.log(`❌ Invalid selection. Please enter a number between 1 and ${config.organizations.length}`);
+    }
+  }
+
+  rl.close();
+  return selectedOrg;
+}
+
+// Schedule periodic analysis
+async function scheduleAnalysis() {
+  const org = await selectOrganization();
   
   // Initial run
   console.log('🚀 Starting initial analysis...');
@@ -172,8 +207,8 @@ function scheduleAnalysis() {
 }
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`\n🌐 Server running on http://localhost:${PORT}`);
   console.log(`📡 API available at http://localhost:${PORT}/api/stats\n`);
-  scheduleAnalysis();
+  await scheduleAnalysis();
 });
