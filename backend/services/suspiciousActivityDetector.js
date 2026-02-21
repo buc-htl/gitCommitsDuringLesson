@@ -1,8 +1,12 @@
 export class SuspiciousActivityDetector {
   constructor() {
     this.thresholds = {
+      // Mass activity pattern (HIGHEST PRIORITY)
+      massActivityMinCommits: 3,
+      massActivityMinLines: 200,
+      massActivityMaxMinutes: 10,
       // Lines per commit
-      massCommitLines: 250,
+      massCommitLines: 300,
       // Lines per minute between commits
       unrealisticSpeed: 100,
       // Time between commits (seconds)
@@ -33,17 +37,46 @@ export class SuspiciousActivityDetector {
       new Date(a.commit.author.date) - new Date(b.commit.author.date)
     );
 
+    // Calculate total lines
+    const totalAdditions = sortedCommits.reduce((sum, c) => sum + (c.stats?.additions || 0), 0);
+    const totalDeletions = sortedCommits.reduce((sum, c) => sum + (c.stats?.deletions || 0), 0);
+    const totalLines = totalAdditions + totalDeletions;
+
+    // Check 0: MASS ACTIVITY - Many commits with big changes in short time (HIGHEST PRIORITY)
+    if (sortedCommits.length >= this.thresholds.massActivityMinCommits) {
+      const firstTime = new Date(sortedCommits[0].commit.author.date);
+      const lastTime = new Date(sortedCommits[sortedCommits.length - 1].commit.author.date);
+      const durationMinutes = (lastTime - firstTime) / 1000 / 60;
+      
+      if (totalLines >= this.thresholds.massActivityMinLines && 
+          durationMinutes <= this.thresholds.massActivityMaxMinutes) {
+        const severity = totalLines >= 500 ? 'high' : totalLines >= 300 ? 'medium' : 'medium';
+        const basePoints = 50;
+        // Scale points based on intensity
+        const intensityMultiplier = Math.min(2, totalLines / 300);
+        const points = Math.round(basePoints * intensityMultiplier);
+        
+        flags.push({
+          type: 'MASS_ACTIVITY',
+          severity: severity,
+          message: `${sortedCommits.length} commits, ${totalLines} lines in ${Math.round(durationMinutes)} minutes`,
+          points: points
+        });
+        score += points;
+      }
+    }
+
     // Check 1: Mass commit (single commit with too many lines)
     sortedCommits.forEach((commit, idx) => {
-      const totalLines = (commit.stats?.additions || 0) + (commit.stats?.deletions || 0);
-      if (totalLines > this.thresholds.massCommitLines) {
+      const commitLines = (commit.stats?.additions || 0) + (commit.stats?.deletions || 0);
+      if (commitLines > this.thresholds.massCommitLines) {
         flags.push({
           type: 'MASS_COMMIT',
           severity: 'high',
-          message: `Commit ${idx + 1}: ${totalLines} lines in single commit`,
-          points: 30
+          message: `Commit ${idx + 1}: ${commitLines} lines in single commit`,
+          points: 20
         });
-        score += 30;
+        score += 20;
       }
     });
 
@@ -55,36 +88,33 @@ export class SuspiciousActivityDetector {
           type: 'SINGLE_COMMIT',
           severity: 'high',
           message: `Entire exercise (${lines} lines) in single commit`,
-          points: 25
+          points: 20
         });
-        score += 25;
+        score += 20;
       }
     }
 
     // Check 3: No corrections (too many additions vs deletions)
-    const totalAdditions = sortedCommits.reduce((sum, c) => sum + (c.stats?.additions || 0), 0);
-    const totalDeletions = sortedCommits.reduce((sum, c) => sum + (c.stats?.deletions || 0), 0);
-    
     if (totalDeletions > 0) {
       const ratio = totalAdditions / totalDeletions;
       if (ratio > this.thresholds.noCorrectionsRatio) {
         flags.push({
           type: 'NO_CORRECTIONS',
-          severity: 'medium',
+          severity: 'low',
           message: `Ratio ${ratio.toFixed(1)}:1 additions/deletions (no mistakes/refactoring)`,
-          points: 15
+          points: 10
         });
-        score += 15;
+        score += 10;
       }
     } else if (totalAdditions > 100) {
       // Only additions, no deletions at all
       flags.push({
         type: 'ONLY_ADDITIONS',
-        severity: 'medium',
+        severity: 'low',
         message: `${totalAdditions} additions, 0 deletions (no corrections)`,
-        points: 20
+        points: 12
       });
-      score += 20;
+      score += 12;
     }
 
     // Check 4: Rapid-fire commits (all within short time)
@@ -93,7 +123,11 @@ export class SuspiciousActivityDetector {
       const lastTime = new Date(sortedCommits[sortedCommits.length - 1].commit.author.date);
       const durationSeconds = (lastTime - firstTime) / 1000;
       
-      if (durationSeconds < this.thresholds.rapidFireInterval && sortedCommits.length >= 3) {
+      // Only flag if not already caught by MASS_ACTIVITY
+      const alreadyFlaggedMassActivity = flags.some(f => f.type === 'MASS_ACTIVITY');
+      if (durationSeconds < this.thresholds.rapidFireInterval && 
+          sortedCommits.length >= 3 && 
+          !alreadyFlaggedMassActivity) {
         flags.push({
           type: 'RAPID_FIRE',
           severity: 'medium',
@@ -140,9 +174,9 @@ export class SuspiciousActivityDetector {
         type: 'GENERIC_MESSAGES',
         severity: 'low',
         message: `All ${genericCount} commit messages are generic/empty`,
-        points: 10
+        points: 8
       });
-      score += 10;
+      score += 8;
     } else if (genericCount >= sortedCommits.length * 0.7) {
       flags.push({
         type: 'MOSTLY_GENERIC',
