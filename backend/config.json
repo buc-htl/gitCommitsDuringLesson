@@ -1,5 +1,6 @@
 {
   "debugCommits": false,
+  "detectSuspiciousActivity": true,
   "organizations": [
     {
       "name": "25-26-2CI-SEW",

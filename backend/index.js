@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 import readline from 'readline/promises';
 import { GitHubService } from './services/github.js';
 import { CommitAnalyzer } from './services/analyzer.js';
+import { SuspiciousActivityDetector } from './services/suspiciousActivityDetector.js';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -43,6 +44,7 @@ if (!githubToken) {
 
 const githubService = new GitHubService(githubToken);
 const analyzer = new CommitAnalyzer();
+const suspiciousDetector = new SuspiciousActivityDetector();
 
 // Middleware
 app.use(express.static(join(__dirname, '../frontend')));
@@ -81,6 +83,7 @@ async function analyzeOrganization(organization) {
     console.log(`✅ Found ${repos.length} repositories`);
 
     const repoStats = [];
+    const repoCommitsMap = new Map(); // Store commits for suspicious activity analysis
 
     // Analyze each repository
     for (const repo of repos) {
@@ -115,6 +118,11 @@ async function analyzeOrganization(organization) {
 
       const stats = analyzer.analyzeCommits(detailedCommits);
       
+      // Store commits for suspicious activity analysis
+      if (detailedCommits.length > 0) {
+        repoCommitsMap.set(repo.name, detailedCommits);
+      }
+      
       // Debug: Show each commit with timestamp and message (if enabled in config)
       if (config.debugCommits && detailedCommits.length > 0) {
         console.log(`\n    [COMMITS in ${repo.name}]`);
@@ -147,6 +155,15 @@ async function analyzeOrganization(organization) {
 
     const reposWithCommits = repoStats.filter(r => r.commitCount > 0).length;
     console.log(`\n✨ Analysis complete! ${repos.length} repositories processed, ${reposWithCommits} with commits in time window.\n`);
+    
+    // Detect suspicious activity if enabled
+    if (config.detectSuspiciousActivity && repoCommitsMap.size > 0) {
+      const reports = [];
+      for (const [repoName, commits] of repoCommitsMap) {
+        reports.push(suspiciousDetector.analyze(commits, repoName));
+      }
+      suspiciousDetector.printReport(reports, since, until);
+    }
   } catch (error) {
     console.error('❌ Error during analysis:', error.message);
   }
