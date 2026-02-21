@@ -1,0 +1,16 @@
+{
+  "debugCommits": false,
+  "organizations": [
+    {
+      "name": "25-26-2CI-SEW",
+      "timeWindows": [
+        {
+          "day": "monday",
+          "startTime": "10:00",
+          "endTime": "12:00"
+        }
+      ]
+    }
+  ],
+  "checkInterval": "*/1 * * * *"
+}

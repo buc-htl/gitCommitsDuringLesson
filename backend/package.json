@@ -1,0 +1,20 @@
+{
+  "name": "github-commits-analyzer",
+  "version": "1.0.0",
+  "description": "Analyze GitHub commits during specific time windows",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "node-cron": "^3.0.2",
+    "axios": "^1.6.2",
+    "dotenv": "^16.0.3"
+  },
+  "devDependencies": {},
+  "author": "",
+  "license": "ISC"
+}
