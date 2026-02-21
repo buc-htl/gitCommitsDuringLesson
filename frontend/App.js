@@ -184,7 +184,25 @@ export default {
     getTimeWindowDisplay() {
       if (!this.stats.timeWindow) return 'N/A';
       const tw = this.stats.timeWindow;
-      return `${tw.day || 'N/A'} ${tw.startTime || ''} - ${tw.endTime || ''}`;
+      
+      // Use actual calculated since/until if available
+      if (tw.since && tw.until) {
+        const sinceDate = new Date(tw.since);
+        const untilDate = new Date(tw.until);
+        
+        const formatDate = (date) => {
+          const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+          const dayName = days[date.getDay()];
+          const hours = String(date.getHours()).padStart(2, '0');
+          const minutes = String(date.getMinutes()).padStart(2, '0');
+          return `${dayName} ${hours}:${minutes}`;
+        };
+        
+        return `${formatDate(sinceDate)} - ${formatDate(untilDate)}`;
+      }
+      
+      // Fallback to config display if calculation not available
+      return `${tw.startDay || 'N/A'} ${tw.startTime || ''} - ${tw.endDay || tw.startDay || 'N/A'} ${tw.endTime || ''}`;
     },
 
     getLastUpdateTime() {

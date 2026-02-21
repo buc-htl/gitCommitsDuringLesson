@@ -15,6 +15,17 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Helper function to parse JSONC (JSON with Comments)
+function parseJSONWithComments(jsonString) {
+  // Remove single-line comments
+  let result = jsonString.replace(/\/\/.*$/gm, '');
+  // Remove multi-line comments
+  result = result.replace(/\/\*[\s\S]*?\*\//g, '');
+  // Remove trailing commas before } and ]
+  result = result.replace(/,\s*([\]}])/g, '$1');
+  return JSON.parse(result);
+}
+
 const app = express();
 const PORT = 3000;
 
@@ -28,10 +39,11 @@ let currentStats = {
 // Load configuration
 let config;
 try {
-  const configPath = join(__dirname, 'config.json');
-  config = JSON.parse(readFileSync(configPath, 'utf-8'));
+  const configPath = join(__dirname, 'config.jsonc');
+  const configContent = readFileSync(configPath, 'utf-8');
+  config = parseJSONWithComments(configContent);
 } catch (error) {
-  console.error('Error loading config.json:', error.message);
+  console.error('Error loading config.jsonc:', error.message);
   process.exit(1);
 }
 
@@ -67,12 +79,33 @@ app.get('/api/config', (req, res) => {
 // Main analysis function
 async function analyzeOrganization(organization) {
   console.log(`\n📊 Analyzing organization: ${organization.name}`);
-  console.log(`⏰ Time window: ${organization.timeWindows[0].day} ${organization.timeWindows[0].startTime} - ${organization.timeWindows[0].endTime}`);
   
   const timeWindow = organization.timeWindows[0];
+  
+  // Build display text supporting both day names and specific dates
+  let timeWindowDisplay;
+  if (timeWindow.startDate && timeWindow.endDate) {
+    // Using specific dates
+    timeWindowDisplay = timeWindow.startDate === timeWindow.endDate 
+      ? `${timeWindow.startDate} ${timeWindow.startTime} - ${timeWindow.endTime}`
+      : `${timeWindow.startDate} ${timeWindow.startTime} - ${timeWindow.endDate} ${timeWindow.endTime}`;
+    console.log(`⏰ Time window: ${timeWindowDisplay}`);
+  } else if (timeWindow.startDay && timeWindow.endDay) {
+    // Using day names
+    timeWindowDisplay = timeWindow.startDay === timeWindow.endDay 
+      ? `${timeWindow.startDay} ${timeWindow.startTime} - ${timeWindow.endTime}`
+      : `${timeWindow.startDay} ${timeWindow.startTime} - ${timeWindow.endDay} ${timeWindow.endTime}`;
+    console.log(`⏰ Time window: ${timeWindowDisplay}`);
+  }
+  
+  // Determine which fields to pass to analyzer
+  const startParam = timeWindow.startDate || timeWindow.startDay;
+  const endParam = timeWindow.endDate || timeWindow.endDay;
+  
   const { since, until } = analyzer.getLastTimeWindow(
-    timeWindow.day,
+    startParam,
     timeWindow.startTime,
+    endParam,
     timeWindow.endTime
   );
   
@@ -148,7 +181,11 @@ async function analyzeOrganization(organization) {
     // Update global state
     currentStats = {
       organization: organization.name,
-      timeWindow: timeWindow,
+      timeWindow: {
+        ...timeWindow,
+        since: since.toISOString(),
+        until: until.toISOString()
+      },
       lastUpdate: new Date().toISOString(),
       repositories: repoStats
     };
@@ -172,7 +209,7 @@ async function analyzeOrganization(organization) {
 // Prompt user to select an organization
 async function selectOrganization() {
   if (config.organizations.length === 0) {
-    console.error('❌ No organizations configured in config.json');
+    console.error('❌ No organizations configured in config.jsonc');
     process.exit(1);
   }
 

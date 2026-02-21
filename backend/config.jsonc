@@ -1,22 +1,26 @@
 {
-  "debugCommits": false,
+  "debugCommits": true,
   "detectSuspiciousActivity": true,
   "organizations": [
     {
       "name": "25-26-2CI-SEW",
       "timeWindows": [
         {
-          "day": "monday",
+          // Time windows can use either day names (monday, tuesday, etc.) or specific dates (YYYY-MM-DD)
+          "startDay": "monday", // e.g. "monday" or "2026-02-21"
           "startTime": "09:55",
+          "endDay": "friday",
           "endTime": "11:35"
         }
       ]
-    }, {
+    },
+    {
       "name": "25-26-2BI-SEW",
       "timeWindows": [
         {
-          "day": "monday",
+          "startDay": "monday",
           "startTime": "11:35",
+          "endDay": "monday",
           "endTime": "13:25"
         }
       ]

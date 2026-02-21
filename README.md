@@ -37,7 +37,7 @@ npm install
    - Wähle mindestens diese Scopes: `repo`, `read:org`
    - Token kopieren
 
-2. Token in `backend/config.json` eintragen:
+2. Token in `backend/config.jsonc` eintragen:
 
 ```json
 {
@@ -50,7 +50,7 @@ npm install
 
 ### Schritt 4: Organisationen konfigurieren
 
-Die `config.json` hat folgende Struktur:
+Die `config.jsonc` hat folgende Struktur:
 
 ```json
 {
@@ -158,7 +158,7 @@ Liefert die konfigurierte Liste von Organisationen.
 git-commits-analyzer/
 ├── backend/
 │   ├── index.js              # Express Server & Cron-Scheduler
-│   ├── config.json           # Konfiguration
+│   ├── config.jsonc          # Konfiguration
 │   ├── package.json          # Dependencies
 │   └── services/
 │       ├── github.js         # GitHub API Client
@@ -202,7 +202,7 @@ Die Anwendung macht pro Analyse:
 → GitHub Token überprüfen oder refresh
 
 **Error: "Organization not found"**
-→ Organisationsnamen in `config.json` überprüfen
+→ Organisationsnamen in `config.jsonc` überprüfen
 
 **Keine Commits angezeigt**
 → Überprüfe den Zeitfenster (oft sind keine Commits im konfigurierten Fenster)

@@ -1,55 +1,99 @@
 export class CommitAnalyzer {
   /**
-   * Calculate time window boundaries for a given day (in LOCAL timezone)
-   * @param {string} day - Day of week (e.g. 'monday')
+   * Calculate time window boundaries supporting both day names and specific dates
+   * Can accept either (startDay/endDay) or (startDate/endDate) parameters
+   * @param {string} startDayOrDate - Start day name (e.g. 'monday') or date (e.g. '2026-02-21')
    * @param {string} startTime - Start time in local time (e.g. '10:00')
-   * @param {string} endTime - End time in local time (e.g. '12:00')
+   * @param {string} endDayOrDate - End day name (e.g. 'friday') or date (e.g. '2026-02-25')
+   * @param {string} endTime - End time in local time (e.g. '17:00')
    * @returns {Object} Object with since and until Date objects (in UTC for GitHub API)
    */
-  getLastTimeWindow(day, startTime, endTime) {
-    // Get current date in local time
+  getLastTimeWindow(startDayOrDate, startTime, endDayOrDate, endTime) {
+    // Check if specific dates are provided (ISO format: YYYY-MM-DD)
+    const isStartDate = /^\d{4}-\d{2}-\d{2}$/.test(startDayOrDate);
+    const isEndDate = /^\d{4}-\d{2}-\d{2}$/.test(endDayOrDate);
+    
+    if (isStartDate && isEndDate) {
+      // Use specific dates
+      return this._getTimeWindowFromDates(startDayOrDate, startTime, endDayOrDate, endTime);
+    } else if (!isStartDate && !isEndDate) {
+      // Use day names
+      return this._getTimeWindowFromDayNames(startDayOrDate, startTime, endDayOrDate, endTime);
+    } else {
+      throw new Error('Time window config must use either both day names or both specific dates, not mixed');
+    }
+  }
+
+  /**
+   * Get time window from specific dates
+   * @private
+   */
+  _getTimeWindowFromDates(startDateStr, startTime, endDateStr, endTime) {
+    const [startHour, startMin] = startTime.split(':').map(Number);
+    const [endHour, endMin] = endTime.split(':').map(Number);
+
+    const startDate = new Date(startDateStr);
+    startDate.setHours(startHour, startMin, 0, 0);
+
+    const endDate = new Date(endDateStr);
+    endDate.setHours(endHour, endMin, 0, 0);
+
+    return { since: startDate, until: endDate };
+  }
+
+  /**
+   * Get time window from day names (recurring weekly)
+   * @private
+   */
+  _getTimeWindowFromDayNames(startDay, startTime, endDay, endTime) {
     const now = new Date();
-    const currentDayNumber = now.getDay();
     
     const dayMap = {
       'monday': 1, 'tuesday': 2, 'wednesday': 3, 'thursday': 4,
       'friday': 5, 'saturday': 6, 'sunday': 0
     };
     
-    const targetDayNumber = dayMap[day.toLowerCase()];
+    const startDayNumber = dayMap[startDay.toLowerCase()];
+    const endDayNumber = dayMap[endDay.toLowerCase()];
     
-    // Calculate days back to get to the last occurrence of target day
-    let daysBack = (currentDayNumber - targetDayNumber + 7) % 7;
-    
-    // If it's the target day but the time window hasn't started yet, go to last week
     const [startHour, startMin] = startTime.split(':').map(Number);
     const [endHour, endMin] = endTime.split(':').map(Number);
     
-    if (daysBack === 0) {
-      const targetTimeMs = startHour * 3600000 + startMin * 60000;
-      const nowTimeMs = now.getHours() * 3600000 + now.getMinutes() * 60000;
-      
-      if (nowTimeMs < targetTimeMs) {
-        daysBack = 7; // Time window hasn't started yet today, go back a week
-      }
+    // Strategy: Find the most recent occurrence of endDay+endTime that has passed
+    // Then calculate the corresponding startDay+startTime
+    
+    // Find last occurrence of end day/time
+    const currentDayNumber = now.getDay();
+    let daysBackToEnd = (currentDayNumber - endDayNumber + 7) % 7;
+    
+    // Create tentative end date
+    const endDate = new Date(now);
+    endDate.setDate(endDate.getDate() - daysBackToEnd);
+    endDate.setHours(endHour, endMin, 0, 0);
+    
+    // If end date is in the future, go back one week
+    if (endDate > now) {
+      daysBackToEnd += 7;
+      endDate.setDate(endDate.getDate() - 7);
     }
     
-    // Create the target date (midnight of the target day in local time)
-    const targetDate = new Date(now);
-    targetDate.setDate(targetDate.getDate() - daysBack);
-    targetDate.setHours(0, 0, 0, 0);
+    // Calculate start date based on day difference
+    let dayDiff = (endDayNumber - startDayNumber + 7) % 7;
     
-    // Create since and until in local time
-    const sinceLoc = new Date(targetDate);
-    sinceLoc.setHours(startHour, startMin, 0, 0);
+    // Handle week-spanning case: if dayDiff is 0 and endTime < startTime
+    if (dayDiff === 0 && (endHour < startHour || (endHour === startHour && endMin < startMin))) {
+      // Week-spanning window: start is 7 days before end
+      dayDiff = 7;
+    } else if (dayDiff === 0) {
+      // Same day, end >= start: it's a same-day window
+      dayDiff = 0;
+    }
     
-    const untilLoc = new Date(targetDate);
-    untilLoc.setHours(endHour, endMin, 0, 0);
+    const startDate = new Date(endDate);
+    startDate.setDate(startDate.getDate() - dayDiff);
+    startDate.setHours(startHour, startMin, 0, 0);
     
-    // JavaScript Date.toISOString() automatically converts local time to UTC correctly
-    // No need for manual timezone offset adjustment!
-    
-    return { since: sinceLoc, until: untilLoc };
+    return { since: startDate, until: endDate };
   }
 
   /**
