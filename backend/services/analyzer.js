@@ -109,9 +109,6 @@ export class CommitAnalyzer {
     const linesPerCommit = [];
 
     commits.forEach(commit => {
-      const additions = commit.commit?.comment_count || 0; // fallback
-      const deletions = commit.commit?.comment_count || 0;
-      
       // Use stats if available (from detailed commit endpoint)
       if (commit.stats) {
         totalAdditions += commit.stats.additions || 0;
