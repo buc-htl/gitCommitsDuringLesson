@@ -4,6 +4,8 @@
   "organizations": [
     {
       "name": "25-26-2CI-SEW",
+      // Committer names to exclude from analysis (case-insensitive matching on commit.author.name)
+      "ignoreCommitters": ["Reinhold Buchinger"],
       "timeWindows": [
         {
           // Time windows can use either day names (monday, tuesday, etc.) or specific dates (YYYY-MM-DD)
@@ -16,6 +18,7 @@
     },
     {
       "name": "25-26-2BI-SEW",
+      "ignoreCommitters": ["Reinhold Buchinger"],
       "timeWindows": [
         {
           "startDay": "monday",

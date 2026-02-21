@@ -129,15 +129,24 @@ async function analyzeOrganization(organization) {
         until
       );
 
-      if (commits.length === 0) {
+      // Filter out commits from ignored committers
+      let filteredCommits = commits;
+      if (organization.ignoreCommitters && organization.ignoreCommitters.length > 0) {
+        const ignoreList = organization.ignoreCommitters.map(name => name.toLowerCase());
+        filteredCommits = commits.filter(commit => 
+          !ignoreList.includes((commit.commit.author.name || '').toLowerCase())
+        );
+      }
+
+      if (filteredCommits.length === 0) {
         console.log(`✓ 0 commits`);
         continue;
       }
 
       // Get detailed stats for each commit
       let detailedCommits = [];
-      if (commits.length > 0) {
-        for (const commit of commits) {
+      if (filteredCommits.length > 0) {
+        for (const commit of filteredCommits) {
           const details = await githubService.getCommitDetails(
             organization.name,
             repo.name,
