@@ -132,8 +132,8 @@ export default {
       loading: true,
       refreshInterval: 30000, // 30 seconds
       refreshTimer: null,
-      sortBy: 'name',
-      sortDirection: 'asc'
+      sortBy: 'lastCommitDate',
+      sortDirection: 'desc'
     };
   },
 
