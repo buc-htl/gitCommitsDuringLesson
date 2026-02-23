@@ -132,6 +132,11 @@ body {
   font-size: 14px;
 }
 
+.stats-table th.narrow {
+  padding: 16px 8px;
+  width: 100px;
+}
+
 .stats-table th.sortable {
   cursor: pointer;
   user-select: none;
@@ -162,6 +167,17 @@ body {
   padding: 16px;
   color: #333;
   font-size: 14px;
+}
+
+.stats-table td.narrow {
+  padding: 16px 8px;
+  text-align: right;
+}
+
+.last-commit {
+  font-size: 13px;
+  color: #666;
+  white-space: nowrap;
 }
 
 .repo-name a {

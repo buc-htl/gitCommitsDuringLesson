@@ -107,8 +107,13 @@ export class CommitAnalyzer {
     let totalAdditions = 0;
     let totalDeletions = 0;
     const linesPerCommit = [];
+    let lastCommitDate = null;
 
-    commits.forEach(commit => {
+    commits.forEach((commit, index) => {
+      // First commit (newest) becomes the last commit date
+      if (index === 0 && commit.commit && commit.commit.author && commit.commit.author.date) {
+        lastCommitDate = commit.commit.author.date;
+      }
       // Use stats if available (from detailed commit endpoint)
       if (commit.stats) {
         totalAdditions += commit.stats.additions || 0;
@@ -129,7 +134,8 @@ export class CommitAnalyzer {
       totalAdditions: totalAdditions,
       totalDeletions: totalDeletions,
       avgLinesPerCommit: avgLinesPerCommit,
-      linesPerCommit: linesPerCommit
+      linesPerCommit: linesPerCommit,
+      lastCommitDate: lastCommitDate
     };
   }
 }

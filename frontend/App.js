@@ -63,9 +63,13 @@ export default {
                   Deletions
                   <span class="sort-indicator" v-if="sortBy === 'totalDeletions'">{{ sortDirection === 'asc' ? '▲' : '▼' }}</span>
                 </th>
-                <th @click="sortTable('avgLinesPerCommit')" class="text-right sortable">
+                <th @click="sortTable('avgLinesPerCommit')" class="text-right sortable narrow">
                   Avg Lines/Commit
                   <span class="sort-indicator" v-if="sortBy === 'avgLinesPerCommit'">{{ sortDirection === 'asc' ? '▲' : '▼' }}</span>
+                </th>
+                <th @click="sortTable('lastCommitDate')" class="sortable">
+                  Last Commit
+                  <span class="sort-indicator" v-if="sortBy === 'lastCommitDate'">{{ sortDirection === 'asc' ? '▲' : '▼' }}</span>
                 </th>
               </tr>
             </thead>
@@ -88,8 +92,11 @@ export default {
                 <td class="text-right">
                   <span class="badge badge-danger">-{{ repo.totalDeletions }}</span>
                 </td>
-                <td class="text-right">
+                <td class="text-right narrow">
                   <span class="badge badge-secondary">{{ repo.avgLinesPerCommit }}</span>
+                </td>
+                <td class="last-commit">
+                  {{ formatLastCommitDate(repo.lastCommitDate) }}
                 </td>
               </tr>
             </tbody>
@@ -209,6 +216,14 @@ export default {
       return date.toLocaleTimeString('de-DE');
     },
 
+    formatLastCommitDate(dateString) {
+      if (!dateString) return 'N/A';
+      const date = new Date(dateString);
+      const dateStr = date.toLocaleDateString('de-DE');
+      const timeStr = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+      return `${dateStr} ${timeStr}`;
+    },
+
     startAutoRefresh() {
       this.refreshTimer = setInterval(() => {
         this.fetchStats();
@@ -231,6 +246,45 @@ export default {
         this.sortDirection = 'asc';
       }
     }
+  },
+
+  computed: {
+    sortedRepositories() {
+      if (!this.stats.repositories) return [];
+      const repos = [...this.stats.repositories];
+      
+      repos.sort((a, b) => {
+        let aValue = a[this.sortBy];
+        let bValue = b[this.sortBy];
+        
+        // Handle date comparison (lastCommitDate)
+        if (this.sortBy === 'lastCommitDate') {
+          // Treat missing dates as very old (put them at the end)
+          aValue = aValue ? new Date(aValue).getTime() : -Infinity;
+          bValue = bValue ? new Date(bValue).getTime() : -Infinity;
+          if (this.sortDirection === 'asc') {
+            return aValue - bValue;
+          } else {
+            return bValue - aValue;
+          }
+        }
+        
+        // Handle string comparison (repository name)
+        if (typeof aValue === 'string') {
+          const comparison = aValue.localeCompare(bValue, undefined, { sensitivity: 'base' });
+          return this.sortDirection === 'asc' ? comparison : -comparison;
+        }
+        
+        // Handle numeric comparison
+        if (this.sortDirection === 'asc') {
+          return aValue - bValue;
+        } else {
+          return bValue - aValue;
+        }
+      });
+      
+      return repos;
+    },
   },
 
   mounted() {

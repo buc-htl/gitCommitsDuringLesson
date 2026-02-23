@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1771703832878" clover="3.2.0">
-  <project timestamp="1771703832878" name="All files">
+<coverage generated="1771703908167" clover="3.2.0">
+  <project timestamp="1771703908167" name="All files">
     <metrics statements="191" coveredstatements="144" conditionals="117" coveredconditionals="88" methods="24" coveredmethods="20" elements="332" coveredelements="252" complexity="0" loc="191" ncloc="191" packages="1" files="3" classes="3"/>
     <file name="analyzer.js" path="/home/reinhold/HTL/gitCommitsDuringLesson/backend/services/analyzer.js">
       <metrics statements="50" coveredstatements="48" conditionals="30" coveredconditionals="26" methods="5" coveredmethods="5"/>
