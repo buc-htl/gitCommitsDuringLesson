@@ -146,6 +146,11 @@ export default {
         let aValue = a[this.sortBy];
         let bValue = b[this.sortBy];
         
+        // Handle null/undefined values (e.g., lastCommitDate for repos with 0 commits)
+        if (aValue == null && bValue == null) return 0;
+        if (aValue == null) return this.sortDirection === 'asc' ? 1 : -1;
+        if (bValue == null) return this.sortDirection === 'asc' ? -1 : 1;
+        
         // Handle string comparison (repository name)
         if (typeof aValue === 'string') {
           const comparison = aValue.localeCompare(bValue, undefined, { sensitivity: 'base' });

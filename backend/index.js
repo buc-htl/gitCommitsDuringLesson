@@ -146,11 +146,6 @@ async function analyzeOrganization(organization) {
         );
       }
 
-      if (filteredCommits.length === 0) {
-        console.log(`✓ 0 commits`);
-        continue;
-      }
-
       // Get detailed stats for each commit
       let detailedCommits = [];
       if (filteredCommits.length > 0) {
