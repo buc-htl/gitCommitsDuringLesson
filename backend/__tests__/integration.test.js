@@ -312,5 +312,46 @@ describe('Integration Tests', () => {
       expect(stats.totalAdditions).toBe(430);
       expect(stats.totalLinesChanged).toBe(460);
     });
-  });
-});
+
+    it('should exclude merge commits from analysis', () => {
+      // Simulate a mix of regular commits and merge commits
+      const commits = [
+        {
+          parents: [{ sha: 'abc123' }], // Regular commit (1 parent)
+          commit: { 
+            message: 'Add feature', 
+            author: { name: 'Developer', date: new Date('2026-02-16T10:00:00Z').toISOString() } 
+          },
+          stats: { additions: 50, deletions: 5 }
+        },
+        {
+          parents: [{ sha: 'abc123' }, { sha: 'def456' }], // Merge commit (2 parents)
+          commit: { 
+            message: 'Merge branch "feature-x"', 
+            author: { name: 'Developer', date: new Date('2026-02-16T10:30:00Z').toISOString() } 
+          },
+          stats: { additions: 0, deletions: 0 }
+        },
+        {
+          parents: [{ sha: 'ghi789' }], // Regular commit (1 parent)
+          commit: { 
+            message: 'Fix bug', 
+            author: { name: 'Developer', date: new Date('2026-02-16T11:00:00Z').toISOString() } 
+          },
+          stats: { additions: 20, deletions: 10 }
+        }
+      ];
+
+      // Filter out merge commits (as done in index.js)
+      const nonMergeCommits = commits.filter(commit => 
+        !commit.parents || commit.parents.length <= 1
+      );
+
+      const stats = analyzer.analyzeCommits(nonMergeCommits);
+
+      // Should only count the 2 non-merge commits
+      expect(stats.commitCount).toBe(2);
+      expect(stats.totalAdditions).toBe(70);
+      expect(stats.totalDeletions).toBe(15);
+      expect(stats.totalLinesChanged).toBe(85);
+    });

@@ -129,11 +129,18 @@ async function analyzeOrganization(organization) {
         until
       );
 
-      // Filter out commits from ignored committers
-      let filteredCommits = commits;
+      // Filter out merge commits and commits from ignored committers
+      let filteredCommits = commits.filter(commit => {
+        // Exclude merge commits (commits with more than one parent)
+        if (commit.parents && commit.parents.length > 1) {
+          return false;
+        }
+        return true;
+      });
+      
       if (organization.ignoreCommitters && organization.ignoreCommitters.length > 0) {
         const ignoreList = organization.ignoreCommitters.map(name => name.toLowerCase());
-        filteredCommits = commits.filter(commit => 
+        filteredCommits = filteredCommits.filter(commit => 
           !ignoreList.includes((commit.commit.author.name || '').toLowerCase())
         );
       }
