@@ -1,4 +1,5 @@
 import { CommitAnalyzer } from '../services/analyzer.js';
+import { jest } from '@jest/globals';
 
 describe('CommitAnalyzer', () => {
   let analyzer;
@@ -9,6 +10,10 @@ describe('CommitAnalyzer', () => {
 
   describe('getLastTimeWindow', () => {
     describe('with day names', () => {
+      afterEach(() => {
+        jest.useRealTimers();
+      });
+
       it('should return valid date objects for day names', () => {
         const result = analyzer.getLastTimeWindow('Monday', '10:00', 'Monday', '12:00');
         
@@ -42,6 +47,25 @@ describe('CommitAnalyzer', () => {
         
         expect(result1.since.getTime()).toBe(result2.since.getTime());
         expect(result2.since.getTime()).toBe(result3.since.getTime());
+      });
+
+      it('should use today when start time already passed on the same day', () => {
+        jest.useFakeTimers();
+        jest.setSystemTime(new Date('2026-03-03T13:05:00'));
+
+        const result = analyzer.getLastTimeWindow('tuesday', '13:00', 'tuesday', '15:00');
+
+        expect(result.since.getFullYear()).toBe(2026);
+        expect(result.since.getMonth()).toBe(2); // March
+        expect(result.since.getDate()).toBe(3);
+        expect(result.since.getHours()).toBe(13);
+        expect(result.since.getMinutes()).toBe(0);
+
+        expect(result.until.getFullYear()).toBe(2026);
+        expect(result.until.getMonth()).toBe(2); // March
+        expect(result.until.getDate()).toBe(3);
+        expect(result.until.getHours()).toBe(15);
+        expect(result.until.getMinutes()).toBe(0);
       });
     });
 

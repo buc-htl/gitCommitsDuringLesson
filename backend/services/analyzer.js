@@ -56,53 +56,49 @@ export class CommitAnalyzer {
     
     const startDayNumber = dayMap[startDay.toLowerCase()];
     const endDayNumber = dayMap[endDay.toLowerCase()];
+
+    if (startDayNumber === undefined || endDayNumber === undefined) {
+      throw new Error(`Invalid day name in time window: ${startDay}, ${endDay}`);
+    }
     
     const [startHour, startMin] = startTime.split(':').map(Number);
     const [endHour, endMin] = endTime.split(':').map(Number);
     
-    // Strategy: Find the most recent occurrence of endDay+endTime that has passed
-    // Then calculate the corresponding startDay+startTime
-    
-    // Find last occurrence of end day/time
+    // Strategy: anchor on the most recent startDay+startTime that is not in the future.
+    // This ensures that when today's start time has already passed, the window starts today.
     const currentDayNumber = now.getDay();
-    let daysBackToEnd = (currentDayNumber - endDayNumber + 7) % 7;
-    
-    // Create tentative end date
-    const endDate = new Date(now);
-    endDate.setDate(endDate.getDate() - daysBackToEnd);
-    endDate.setHours(endHour, endMin, 0, 0);
-    
-    // If end date is in the future, go back one week
-    if (endDate > now) {
-      daysBackToEnd += 7;
-      endDate.setDate(endDate.getDate() - 7);
-    }
-    
-    // Calculate start date based on day difference
-    let dayDiff = (endDayNumber - startDayNumber + 7) % 7;
-    
-    // Handle week-spanning case: if dayDiff is 0 and endTime < startTime
-    if (dayDiff === 0 && (endHour < startHour || (endHour === startHour && endMin < startMin))) {
-      // Week-spanning window: start is 7 days before end
-      dayDiff = 7;
-    } else if (dayDiff === 0) {
-      // Same day, end >= start: it's a same-day window
-      dayDiff = 0;
-    }
-    
-    const startDate = new Date(endDate);
-    startDate.setDate(startDate.getDate() - dayDiff);
+    const daysBackToStart = (currentDayNumber - startDayNumber + 7) % 7;
+
+    const startDate = new Date(now);
+    startDate.setDate(startDate.getDate() - daysBackToStart);
     startDate.setHours(startHour, startMin, 0, 0);
+
+    // If today's start time has not happened yet, use previous week's window.
+    if (startDate > now) {
+      startDate.setDate(startDate.getDate() - 7);
+    }
+
+    // Calculate end date based on start date and configured day/time span.
+    let daysForwardToEnd = (endDayNumber - startDayNumber + 7) % 7;
+    if (daysForwardToEnd === 0 && (endHour < startHour || (endHour === startHour && endMin < startMin))) {
+      daysForwardToEnd = 7;
+    }
+
+    const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + daysForwardToEnd);
+    endDate.setHours(endHour, endMin, 0, 0);
     
     return { since: startDate, until: endDate };
   }
 
   /**
    * Analyze commits and calculate statistics
+   * Optionally filter by file extensions
    * @param {Array} commits - Array of commit objects from GitHub API
+   * @param {Array} fileExtensions - Optional array of file extensions to include (e.g., ['.java', '.fxml'])
    * @returns {Object} Statistics object
    */
-  analyzeCommits(commits) {
+  analyzeCommits(commits, fileExtensions = null) {
     let totalLinesChanged = 0;
     let totalAdditions = 0;
     let totalDeletions = 0;
@@ -114,8 +110,30 @@ export class CommitAnalyzer {
       if (index === 0 && commit.commit && commit.commit.author && commit.commit.author.date) {
         lastCommitDate = commit.commit.author.date;
       }
-      // Use stats if available (from detailed commit endpoint)
-      if (commit.stats) {
+      
+      // If file extensions are specified, filter by those extensions
+      if (fileExtensions && commit.files && commit.files.length > 0) {
+        let commitAdditions = 0;
+        let commitDeletions = 0;
+        
+        commit.files.forEach(file => {
+          // Check if file matches any of the specified extensions
+          const matchesExtension = fileExtensions.some(ext => file.filename.endsWith(ext));
+          if (matchesExtension) {
+            commitAdditions += file.additions || 0;
+            commitDeletions += file.deletions || 0;
+          }
+        });
+        
+        if (commitAdditions > 0 || commitDeletions > 0) {
+          totalAdditions += commitAdditions;
+          totalDeletions += commitDeletions;
+          const linesChanged = commitAdditions + commitDeletions;
+          totalLinesChanged += linesChanged;
+          linesPerCommit.push(linesChanged);
+        }
+      } else if (!fileExtensions && commit.stats) {
+        // Use stats if available (from detailed commit endpoint)
         totalAdditions += commit.stats.additions || 0;
         totalDeletions += commit.stats.deletions || 0;
         const linesChanged = (commit.stats.additions || 0) + (commit.stats.deletions || 0);
@@ -124,8 +142,8 @@ export class CommitAnalyzer {
       }
     });
 
-    const avgLinesPerCommit = commits.length > 0 
-      ? Math.round(totalLinesChanged / commits.length) 
+    const avgLinesPerCommit = linesPerCommit.length > 0 
+      ? Math.round(totalLinesChanged / linesPerCommit.length) 
       : 0;
 
     return {

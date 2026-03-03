@@ -158,7 +158,7 @@ async function analyzeOrganization(organization) {
         }
       }
 
-      const stats = analyzer.analyzeCommits(detailedCommits);
+      const stats = analyzer.analyzeCommits(detailedCommits, organization.fileExtensions || null);
       
       // Store commits for suspicious activity analysis
       if (detailedCommits.length > 0) {
