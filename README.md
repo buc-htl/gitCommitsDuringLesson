@@ -9,6 +9,7 @@ Eine Node.js Applikation, die regelmäßig Commits von GitHub-Organisationen ana
 - 📈 Statistiken pro Repository (Anzahl Commits, geänderte Zeilen, etc.)
 - 🌐 Live Webseite mit Auto-Refresh
 - 🔐 Sichere GitHub API Token-Verwaltung
+- 🔀 Automatische Filterung von Merge-Commits (nur tatsächliche Entwicklungsarbeit wird gezählt)
 
 ## 🚀 Installation & Setup
 

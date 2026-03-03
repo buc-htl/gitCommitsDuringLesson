@@ -130,6 +130,7 @@ async function analyzeOrganization(organization) {
       );
 
       // Filter out merge commits and commits from ignored committers
+      // Merge commits (commits with 2+ parents) are excluded to focus on actual development work
       let filteredCommits = commits.filter(commit => {
         // Exclude merge commits (commits with more than one parent)
         if (commit.parents && commit.parents.length > 1) {

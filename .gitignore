@@ -14,3 +14,7 @@ build/
 *.swo
 *~
 .env.*.local
+# Test coverage
+coverage/
+.nyc_output/
+*.lcov

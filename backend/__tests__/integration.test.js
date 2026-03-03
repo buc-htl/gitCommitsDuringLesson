@@ -354,4 +354,5 @@ describe('Integration Tests', () => {
       expect(stats.totalAdditions).toBe(70);
       expect(stats.totalDeletions).toBe(15);
       expect(stats.totalLinesChanged).toBe(85);
-    });
+    });  });
+});
