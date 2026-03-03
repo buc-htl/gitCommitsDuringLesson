@@ -184,7 +184,11 @@ async function analyzeOrganization(organization) {
         ...stats
       });
 
-      console.log(`✓ ${stats.commitCount} commits, ${stats.totalLinesChanged} lines changed`);
+      // Show filtered vs total commits if filtering is active
+      const commitInfo = stats.countedCommits < stats.commitCount 
+        ? `${stats.countedCommits}/${stats.commitCount} commits` 
+        : `${stats.commitCount} commits`;
+      console.log(`✓ ${commitInfo}, ${stats.totalLinesChanged} lines changed`);
     }
 
     // Update global state

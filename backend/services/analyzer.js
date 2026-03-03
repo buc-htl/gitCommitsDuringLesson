@@ -57,6 +57,7 @@ export class CommitAnalyzer {
     const startDayNumber = dayMap[startDay.toLowerCase()];
     const endDayNumber = dayMap[endDay.toLowerCase()];
 
+    // Validation: any invalid or misspelled day name must cause an error so tests can assert this behavior.
     if (startDayNumber === undefined || endDayNumber === undefined) {
       throw new Error(`Invalid day name in time window: ${startDay}, ${endDay}`);
     }
@@ -96,7 +97,7 @@ export class CommitAnalyzer {
    * Optionally filter by file extensions
    * @param {Array} commits - Array of commit objects from GitHub API
    * @param {Array} fileExtensions - Optional array of file extensions to include (e.g., ['.java', '.fxml'])
-   * @returns {Object} Statistics object
+   * @returns {Object} Statistics object with commitCount (total), countedCommits (those with matching changes)
    */
   analyzeCommits(commits, fileExtensions = null) {
     let totalLinesChanged = 0;
@@ -142,12 +143,14 @@ export class CommitAnalyzer {
       }
     });
 
+    // Use only commits that contributed line-change data (after optional extension filtering).
     const avgLinesPerCommit = linesPerCommit.length > 0 
       ? Math.round(totalLinesChanged / linesPerCommit.length) 
       : 0;
 
     return {
       commitCount: commits.length,
+      countedCommits: linesPerCommit.length,
       totalLinesChanged: totalLinesChanged,
       totalAdditions: totalAdditions,
       totalDeletions: totalDeletions,

@@ -8,13 +8,13 @@
       "ignoreCommitters": ["Reinhold Buchinger"],
       // Optional: Filter statistics by file extensions (e.g., [".java", ".fxml"])
       // If specified, only changes in these file types will be counted
-      // "fileExtensions": [".java", ".fxml"],
+      "fileExtensions": [".java", ".fxml"],
       "timeWindows": [
         {
           // Time windows can use either day names (Monday, Tuesday, etc.) or specific dates (YYYY-MM-DD)
-          "startDay": "Monday", // e.g. "Monday" or "2026-02-21"
+          "startDay": "2026-02-23", // e.g. "Monday" or "2026-02-21"
           "startTime": "09:55",
-          "endDay": "Monday", 
+          "endDay": "2026-02-23", 
           "endTime": "11:35"
         }
       ]

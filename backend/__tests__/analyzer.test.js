@@ -67,6 +67,48 @@ describe('CommitAnalyzer', () => {
         expect(result.until.getHours()).toBe(15);
         expect(result.until.getMinutes()).toBe(0);
       });
+
+      it('should use previous week when current time is before start time on start day', () => {
+        jest.useFakeTimers();
+        // Current time: Tuesday March 3, 2026 at 09:00
+        // Start time: Tuesday at 13:00 (hasn't occurred yet today)
+        jest.setSystemTime(new Date('2026-03-03T09:00:00'));
+
+        const result = analyzer.getLastTimeWindow('tuesday', '13:00', 'tuesday', '15:00');
+
+        // Should use previous Tuesday (Feb 24, 2026)
+        expect(result.since.getFullYear()).toBe(2026);
+        expect(result.since.getMonth()).toBe(1); // February
+        expect(result.since.getDate()).toBe(24);
+        expect(result.since.getHours()).toBe(13);
+        expect(result.since.getMinutes()).toBe(0);
+
+        expect(result.until.getFullYear()).toBe(2026);
+        expect(result.until.getMonth()).toBe(1); // February
+        expect(result.until.getDate()).toBe(24);
+        expect(result.until.getHours()).toBe(15);
+        expect(result.until.getMinutes()).toBe(0);
+      });
+
+      it('should use previous week for multi-day window when start time has not occurred', () => {
+        jest.useFakeTimers();
+        // Current time: Monday March 2, 2026 at 08:00
+        // Start time: Monday at 10:00 (hasn't occurred yet today)
+        jest.setSystemTime(new Date('2026-03-02T08:00:00'));
+
+        const result = analyzer.getLastTimeWindow('monday', '10:00', 'friday', '17:00');
+
+        // Should use previous Monday (Feb 23, 2026) to Friday (Feb 27, 2026)
+        expect(result.since.getFullYear()).toBe(2026);
+        expect(result.since.getMonth()).toBe(1); // February
+        expect(result.since.getDate()).toBe(23);
+        expect(result.since.getHours()).toBe(10);
+
+        expect(result.until.getFullYear()).toBe(2026);
+        expect(result.until.getMonth()).toBe(1); // February
+        expect(result.until.getDate()).toBe(27);
+        expect(result.until.getHours()).toBe(17);
+      });
     });
 
     describe('with specific dates', () => {
@@ -123,6 +165,7 @@ describe('CommitAnalyzer', () => {
       const stats = analyzer.analyzeCommits(commits);
 
       expect(stats.commitCount).toBe(3);
+      expect(stats.countedCommits).toBe(3);
       expect(stats.totalAdditions).toBe(45);
       expect(stats.totalDeletions).toBe(10);
       expect(stats.totalLinesChanged).toBe(55);
@@ -133,6 +176,7 @@ describe('CommitAnalyzer', () => {
       const stats = analyzer.analyzeCommits([]);
 
       expect(stats.commitCount).toBe(0);
+      expect(stats.countedCommits).toBe(0);
       expect(stats.totalAdditions).toBe(0);
       expect(stats.totalDeletions).toBe(0);
       expect(stats.totalLinesChanged).toBe(0);
@@ -150,6 +194,7 @@ describe('CommitAnalyzer', () => {
       const stats = analyzer.analyzeCommits(commits);
 
       expect(stats.commitCount).toBe(2);
+      expect(stats.countedCommits).toBe(1);
       expect(stats.totalAdditions).toBe(10);
       expect(stats.totalLinesChanged).toBe(12);
     });
@@ -162,6 +207,8 @@ describe('CommitAnalyzer', () => {
 
       const stats = analyzer.analyzeCommits(commits);
 
+      expect(stats.commitCount).toBe(2);
+      expect(stats.countedCommits).toBe(2);
       expect(stats.avgLinesPerCommit).toBe(150);
     });
 
@@ -173,8 +220,39 @@ describe('CommitAnalyzer', () => {
       const stats = analyzer.analyzeCommits(commits);
 
       expect(stats.commitCount).toBe(1);
+      expect(stats.countedCommits).toBe(1);
       expect(stats.totalLinesChanged).toBe(60);
       expect(stats.avgLinesPerCommit).toBe(60);
+    });
+
+    it('should filter by file extensions and show correct counted vs total commits', () => {
+      const commits = [
+        {
+          files: [
+            { filename: 'Main.java', additions: 30, deletions: 5 },
+            { filename: 'style.css', additions: 10, deletions: 2 }
+          ]
+        },
+        {
+          files: [
+            { filename: 'readme.md', additions: 5, deletions: 1 }
+          ]
+        },
+        {
+          files: [
+            { filename: 'Controller.java', additions: 20, deletions: 8 }
+          ]
+        }
+      ];
+
+      const stats = analyzer.analyzeCommits(commits, ['.java']);
+
+      expect(stats.commitCount).toBe(3); // Total commits
+      expect(stats.countedCommits).toBe(2); // Only commits with .java files
+      expect(stats.totalAdditions).toBe(50); // 30 + 20
+      expect(stats.totalDeletions).toBe(13); // 5 + 8
+      expect(stats.totalLinesChanged).toBe(63);
+      expect(stats.avgLinesPerCommit).toBe(32); // 63 / 2 rounded
     });
   });
 });
